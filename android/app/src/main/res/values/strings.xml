@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Rewritten by scripts/android/build-apk.mjs, which reads the name from package.json. -->
+<resources>
+    <string name="app_name">LIFEKIT</string>
+</resources>

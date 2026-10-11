@@ -1,0 +1,12 @@
+# Build output and installed dependencies
+node_modules/
+dist/
+dist-android/
+.android-build/
+
+# The web app copy that the Android build generates into the APK's assets
+android/app/src/main/assets/www/
+
+# Runtime content and secrets never belong in version control (see server/.gitignore)
+data/
+.env

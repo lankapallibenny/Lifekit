@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The window is painted the app's navy before the WebView draws anything, so launching LIFEKIT
+  never flashes white. DayNight keeps the system's light/dark preference visible to the WebView
+  (the web app's own "System" theme setting reads it); algorithmic darkening stays off so the
+  designed palette is what the user sees.
+-->
+<resources>
+    <style name="Theme.Lifekit" parent="android:Theme.DeviceDefault.DayNight">
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowActionBar">false</item>
+        <item name="android:windowBackground">@color/splash_background</item>
+        <item name="android:colorBackground">@color/splash_background</item>
+        <item name="android:statusBarColor">@color/splash_background</item>
+        <item name="android:navigationBarColor">@color/navy_deep</item>
+        <item name="android:windowLightStatusBar">false</item>
+    </style>
+</resources>
