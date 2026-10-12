@@ -589,7 +589,7 @@ export function PrivacyPage(): JSX.Element {
   const { settings, storage } = useStore();
   return (
     <div className="stack">
-      <PageHeader title="Privacy notice" description="Written in plain language, and current for version 1.0.0." />
+      <PageHeader title="Privacy notice" description="Written in plain language, and current for version 1.0.1." />
 
       <Card title="The short version">
         <ul className="small">

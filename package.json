@@ -1,7 +1,7 @@
 {
   "name": "lifekit",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.0.1",
   "type": "module",
   "license": "MIT",
   "description": "LIFEKIT \u2014 Everyday Tools. A Better Life. An offline-first, no-AI personal life toolkit PWA. Developed by Benny.",

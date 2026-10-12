@@ -2,7 +2,7 @@
 import type { MoneyCategory } from './money';
 import type { AppSettings, Announcement, NotificationPrefs } from './models';
 
-export const APP_VERSION = '1.0.0';
+export const APP_VERSION = '1.0.1';
 export const APP_NAME = 'LIFEKIT';
 export const APP_TAGLINE = 'Everyday Tools. A Better Life.';
 export const DEVELOPER_CREDIT = 'Developed by Benny ❤️';

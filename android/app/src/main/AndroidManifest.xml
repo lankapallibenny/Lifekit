@@ -12,11 +12,13 @@
   * VIBRATE only makes the reminder notification pattern possible.
   * versionCode / versionName are rewritten from package.json by scripts/android/build-apk.mjs;
     tests/android.test.ts asserts they match the version in package.json.
+  * LifekitApplication installs the crash recorder before any activity runs, so a launch failure is
+    written down and shown on the next start instead of the app disappearing silently.
 -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.bennylankapalli.lifekit"
-    android:versionCode="10000"
-    android:versionName="1.0.0">
+    android:versionCode="10001"
+    android:versionName="1.0.1">
 
     <uses-sdk android:minSdkVersion="29" android:targetSdkVersion="34" />
 
@@ -24,6 +26,7 @@
     <uses-permission android:name="android.permission.VIBRATE" />
 
     <application
+        android:name=".LifekitApplication"
         android:label="@string/app_name"
         android:icon="@mipmap/ic_launcher"
         android:roundIcon="@mipmap/ic_launcher_round"

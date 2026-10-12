@@ -269,16 +269,16 @@ npm run android:apk          # -> dist-android/Lifekit-1.0.0.apk (+ .sha256)
 npm run android:check        # verify the shell's config without building
 ```
 
-**Install without building anything:** a build of version 1.0.0 is kept at
-[`android/releases/`](android/releases/README.md) (269,882 bytes, SHA-256 starting `e0eb2dad…`).
+**Install without building anything:** a build of version 1.0.1 is kept at
+[`android/releases/`](android/releases/README.md) (273,979 bytes, SHA-256 starting `3a4c88bf…`).
 Open this on the phone and tap the file:
 
 ```
-https://github.com/lankapallibenny/Lifekit/raw/main/android/releases/Lifekit-1.0.0.apk
+https://github.com/lankapallibenny/Lifekit/raw/main/android/releases/Lifekit-1.0.1.apk
 ```
 
 It installs on Android 10 or newer, needs no account, and asks for no internet permission. The
-SHA-256 of the published file is in `android/releases/Lifekit-1.0.0.apk.sha256`.
+SHA-256 of the published file is in `android/releases/Lifekit-1.0.1.apk.sha256`.
 
 No Android SDK, Gradle or Android Studio is required: if the machine has neither a JDK nor Android
 build tools, the build fetches a self-contained set into `~/.cache/lifekit-android-tools` on first
@@ -351,7 +351,7 @@ one adapter and pass it to `createApp`. The app itself never talks to the databa
 Every number below comes from an actual run of the suite in this repository, not from an
 estimate. Re-run them yourself with `npm test`.
 
-**Result of the last run:** `15 suites passed`, `325 tests passed`, `0 failed`.
+**Result of the last run:** `15 suites passed`, `332 tests passed`, `0 failed`.
 
 | Suite | Verifies |
 | --- | --- |
@@ -367,7 +367,7 @@ estimate. Re-run them yourself with `npm test`.
 | `tests/content.test.ts` | Content integrity: every lesson and channel dates and URLs, no fabricated claims, examples flagged as examples, and validation of the optional published announcement pack |
 | `tests/server.test.ts` | Backend integration over real HTTP: public/private separation, authorization, rate limits, body limits, validation, audit, cookies |
 | `tests/app.test.tsx` | The real UI: onboarding gate, honest empty states, navigation, offline notice, offline task creation, money quick-add persistence, `dialog`-API regression, lesson bookmarking with cached text, résumé draft and application tracker, privacy and licence screens, and the rule that **no network request happens until the optional content feed is switched on** |
-| `tests/android.test.ts` | The APK packaging rules: no `INTERNET` permission, only the two explained permissions, version agreement between `package.json` and the manifest, the origin check on the bridge, single-colour status-bar icon, launcher icons that are byte-identical to the mark, a DEX that is stored and 4-byte aligned, reproducible output, and export file names that cannot escape the Downloads folder |
+| `tests/android.test.ts` | The APK packaging rules: no `INTERNET` permission, only the two explained permissions, version agreement between `package.json` and the manifest, the origin check on the bridge, single-colour status-bar icon, launcher icons that are byte-identical to the mark, a DEX that is stored and 4-byte aligned, reproducible output, export file names that cannot escape the Downloads folder, and the launch-path rules that version 1.0.0 violated (insets controller null-checked and only read after `setContentView`, startup failure always explainable, no DayNight theme dependency, crash recorder installed first) |
 | `tests/native.test.ts` | The Android bridge from JavaScript: exports written to the device rather than downloaded, reminders delivered as system notifications with the app's sound/vibration settings, printing routed to Android, share/open-external — plus every one of those behaving correctly with no shell, with a half-built bridge, with a bridge that throws, and with a bridge that answers with nonsense |
 | `tests/about.test.tsx` | That the About screen tells the truth about where the copy is running: browser storage versus the Android app, where exports land, and that uninstalling removes data |
 
@@ -462,13 +462,17 @@ Known issues (all real, none hidden):
    rendering issues could still exist on uncommon screen sizes.
 8. **Calendar-specific behaviour**: reminders and "today" use the device clock and time zone. A
    device with a wrong clock will date entries wrongly.
-9. **The Android APK is not on any app store, and its default signature is the Android debug
+9. **Android build 1.0.0 does not open on Android 11 or newer** and has been withdrawn — it crashed
+   during launch because the shell read the window's insets controller before the content view
+   existed. Version 1.0.1 fixes it and adds screens that report a failure instead of disappearing;
+   see [android/README.md](android/README.md#5-if-the-app-does-not-open).
+10. **The Android APK is not on any app store, and its default signature is the Android debug
    key.** It is meant to be built and installed by whoever runs `npm run android:apk`; signing with
    your own key is documented in [android/README.md](android/README.md).
-10. **In the Android app the optional remote content feed cannot work**, because the app asks for
+11. **In the Android app the optional remote content feed cannot work**, because the app asks for
     no `INTERNET` permission at all. That is a deliberate trade: the app is completely unable to
     reach the network, and the app says the feed is unreachable instead of pretending.
-11. **The Android shell is the newest, least-tested part of the project.** Its packaging rules and
+12. **The Android shell is the newest, least-tested part of the project.** Its packaging rules and
     JavaScript bridge are covered by tests, but the shell has not been run on a wide range of
     devices, and Android's print engine does not support `@page` print CSS (the app's print rules
     hide navigation and buttons, so the output is still the document rather than the screen).

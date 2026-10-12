@@ -9,11 +9,14 @@ import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.print.PrintAttributes;
 import android.print.PrintDocumentAdapter;
 import android.print.PrintManager;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.WindowInsetsController;
 import android.webkit.PermissionRequest;
 import android.webkit.RenderProcessGoneDetail;
 import android.webkit.ValueCallback;
@@ -49,10 +52,25 @@ public class MainActivity extends Activity {
     private static final int REQUEST_FILE_CHOOSER = 1001;
     private static final int REQUEST_NOTIFICATIONS = 1002;
 
+    /** How long to wait for the bundled page before assuming something went wrong. */
+    private static final long LOAD_TIMEOUT_MS = 8000;
+
     private WebView webView;
     private WebAppInterface bridge;
     private ValueCallback<Uri[]> pendingFileChooser;
     private String pendingRoute;
+
+    /** Set once the bundled page has finished loading; used by the startup watchdog. */
+    private volatile boolean pageLoaded;
+    private volatile boolean servedDocument;
+    private volatile String lastLoadError;
+    private final Handler handler = new Handler(Looper.getMainLooper());
+    private final Runnable loadTimeout = new Runnable() {
+        @Override
+        public void run() {
+            if (!pageLoaded) showStartupProblem("the app's own page did not finish loading");
+        }
+    };
 
     /* ------------------------------------------------------------------ */
     /* lifecycle                                                           */
@@ -62,16 +80,52 @@ public class MainActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        getWindow().setStatusBarColor(AppConfig.COLOR_NAVY);
-        getWindow().setNavigationBarColor(AppConfig.COLOR_NAVY_DEEP);
-        applyStatusBarIconTheme();
+        if (CrashLog.webViewMissing()) {
+            showStartupProblem("Android's WebView component is missing or disabled on this device");
+            return;
+        }
 
-        bridge = new WebAppInterface(this, this);
-        webView = createWebView();
-        setContentView(wrapContent(webView));
+        // A report from the last run is shown once, in the app's own view, before anything else.
+        String previousCrash = CrashLog.read();
+        if (previousCrash != null) CrashLog.clear();
 
-        applyRoute(getIntent());
-        webView.loadUrl(AppConfig.START_URL);
+        try {
+            getWindow().setStatusBarColor(AppConfig.COLOR_NAVY);
+            getWindow().setNavigationBarColor(AppConfig.COLOR_NAVY_DEEP);
+
+            bridge = new WebAppInterface(this, this);
+            webView = createWebView();
+            setContentView(wrapContent(webView));
+
+            // Only after setContentView() does the window have an attached decor view, which is
+            // what the system-bar appearance call needs (see applyStatusBarIconTheme).
+            applyStatusBarIconTheme();
+
+            if (previousCrash != null) {
+                showReportScreen(previousCrash);
+                return;
+            }
+
+            applyRoute(getIntent());
+            webView.loadUrl(AppConfig.START_URL);
+            // If the bundled page has not finished in time, say so rather than showing nothing.
+            handler.postDelayed(loadTimeout, LOAD_TIMEOUT_MS);
+        } catch (Throwable failure) {
+            // This used to mean the app closed with no explanation. Now it says what happened.
+            showStartupProblem(describe(failure));
+        }
+    }
+
+    @Override
+    protected void onDestroy() {
+        handler.removeCallbacks(loadTimeout);
+        if (webView != null) {
+            ViewGroup parent = (ViewGroup) webView.getParent();
+            if (parent != null) parent.removeView(webView);
+            webView.destroy();
+            webView = null;
+        }
+        super.onDestroy();
     }
 
     @Override
@@ -90,17 +144,6 @@ public class MainActivity extends Activity {
             return;
         }
         super.onBackPressed();
-    }
-
-    @Override
-    protected void onDestroy() {
-        if (webView != null) {
-            ViewGroup parent = (ViewGroup) webView.getParent();
-            if (parent != null) parent.removeView(webView);
-            webView.destroy();
-            webView = null;
-        }
-        super.onDestroy();
     }
 
     /**
@@ -195,6 +238,8 @@ public class MainActivity extends Activity {
             @Override
             public void onPageFinished(WebView source, String url) {
                 bridge.setLastCommittedUrl(url);
+                pageLoaded = true;
+                handler.removeCallbacks(loadTimeout);
                 source.post(new Runnable() {
                     @Override
                     public void run() {
@@ -205,9 +250,10 @@ public class MainActivity extends Activity {
 
             @Override
             public void onReceivedError(WebView source, WebResourceRequest request, WebResourceError error) {
-                if (request.isForMainFrame()) {
-                    showStartupFailure(String.valueOf(error.getDescription()));
-                }
+                if (!request.isForMainFrame()) return;
+                handler.removeCallbacks(loadTimeout);
+                lastLoadError = String.valueOf(error.getDescription());
+                showStartupProblem("the bundled page could not be loaded (" + lastLoadError + ")");
             }
 
             @Override
@@ -275,6 +321,7 @@ public class MainActivity extends Activity {
     private WebResourceResponse serveAsset(Uri uri) {
         if (uri == null) return null;
         if (!AppConfig.ORIGIN.equals(uri.getScheme() + "://" + uri.getHost())) return null;
+        servedDocument = true;
 
         String path = uri.getPath() == null ? "/" : uri.getPath();
         if (path.isEmpty() || path.equals("/")) path = "/index.html";
@@ -328,24 +375,78 @@ public class MainActivity extends Activity {
     }
 
     /**
-     * A bundle missing from the APK is the one failure the user cannot work around, so it is
-     * stated plainly instead of leaving a blank screen.
+     * Something went wrong before the app could show itself. Says what, in plain language, with
+     * the details needed to report it, instead of leaving the user with an icon that does nothing.
      */
-    private void showStartupFailure(final String reason) {
-        if (webView == null) return;
-        final String html = "<!doctype html><html><head><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">"
-                + "<style>body{margin:0;padding:32px;font-family:system-ui,sans-serif;background:#0b1f3a;color:#fff}"
-                + "h1{font-size:1.4rem}code{background:#12305b;padding:2px 6px;border-radius:6px}</style></head><body>"
-                + "<h1>LIFEKIT could not open its bundled app</h1>"
-                + "<p>The web app inside this installation is missing or unreadable, so there is nothing to show. "
-                + "Your saved records are not affected — reinstalling the same LIFEKIT build restores the app around them.</p>"
-                + "<p><code>" + escapeHtml(reason) + "</code></p></body></html>";
+    private void showStartupProblem(final String reason) {
+        StringBuilder detail = new StringBuilder();
+        detail.append("What failed: ").append(reason).append('\n');
+        detail.append("Start address: ").append(AppConfig.START_URL).append('\n');
+        detail.append("Bundled page served: ").append(servedDocument ? "yes" : "no").append('\n');
+        detail.append("Page finished loading: ").append(pageLoaded ? "yes" : "no").append('\n');
+        if (lastLoadError != null) detail.append("Last load error: ").append(lastLoadError).append('\n');
+        detail.append("Android: API ").append(AppConfig.apiLevel()).append('\n');
+        detail.append("WebView: ").append(CrashLog.webViewVersion()).append('\n');
+        detail.append("App: ").append(BuildConfig.VERSION_NAME).append(" (").append(BuildConfig.VERSION_CODE).append(')');
+        showDiagnosticScreen(
+                "LIFEKIT could not open",
+                "The app started but the bundled toolkit did not load. Your saved records are not affected. "
+                        + "This is the information needed to fix it:",
+                detail.toString());
+    }
+
+    /** Shows a crash report that was recorded the last time the app died. */
+    private void showReportScreen(final String report) {
+        showDiagnosticScreen(
+                "LIFEKIT closed unexpectedly last time",
+                "This report was saved when the app stopped. It is shown once and then deleted, so copy it now "
+                        + "if you want to report it. Nothing about your records is included.",
+                report);
+    }
+
+    private void showDiagnosticScreen(final String heading, final String explanation, final String details) {
+        final String html = "<!doctype html><html><head><meta charset=\"utf-8\">"
+                + "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">"
+                + "<title>" + escapeHtml(heading) + "</title></head>"
+                + "<body style=\"margin:0;padding:24px;background:#0b1f3a;color:#e8eefb;"
+                + "font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;line-height:1.5\">"
+                + "<h1 style=\"font-size:1.25rem;margin:0 0 12px\">" + escapeHtml(heading) + "</h1>"
+                + "<p style=\"margin:0 0 16px;color:#c6d2e0\">" + escapeHtml(explanation) + "</p>"
+                + "<pre style=\"white-space:pre-wrap;word-break:break-word;background:#08182b;"
+                + "border:1px solid #1b4278;border-radius:12px;padding:14px;font-size:0.8rem;"
+                + "-webkit-user-select:text;user-select:text\">" + escapeHtml(details) + "</pre>"
+                + "<p style=\"margin:18px 0 8px\"><a href=\"" + AppConfig.START_URL + "\" "
+                + "style=\"display:inline-block;background:#2fe0a8;color:#08182b;text-decoration:none;"
+                + "font-weight:600;padding:12px 18px;border-radius:10px\">Open LIFEKIT again</a></p>"
+                + "<p style=\"color:#8fa3bd;font-size:0.85rem\">If it fails again, this screen comes back with "
+                + "the same information. Sending that text to whoever built this APK is enough to diagnose it.</p>"
+                + "</body></html>";
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                if (webView != null) webView.loadDataWithBaseURL(null, html, "text/html", "utf-8", null);
+                try {
+                    if (webView != null) {
+                        webView.loadDataWithBaseURL(null, html, "text/html", "utf-8", null);
+                        applyStatusBarIconTheme();
+                        return;
+                    }
+                    // No WebView to draw in (that may be the problem): fall back to a plain dialog.
+                    new android.app.AlertDialog.Builder(MainActivity.this)
+                            .setTitle(heading)
+                            .setMessage(explanation + "\n\n" + details)
+                            .setPositiveButton("OK", null)
+                            .show();
+                } catch (Throwable failure) {
+                    showToast("LIFEKIT could not start. " + explanation);
+                }
             }
         });
+    }
+
+    private static String describe(Throwable failure) {
+        String message = failure.getMessage();
+        String type = failure.getClass().getSimpleName();
+        return message == null || message.isEmpty() ? type : type + ": " + message;
     }
 
     private static String escapeHtml(String value) {
@@ -493,14 +594,32 @@ public class MainActivity extends Activity {
     /* status bar icons                                                    */
     /* ------------------------------------------------------------------ */
 
-    /** The status bar is navy in both themes, so its icons stay light. */
+    /**
+     * The status bar is navy in both themes, so its icons stay light.
+     *
+     * Two things matter here, both learned the hard way:
+     *
+     *  * `Window.getInsetsController()` returns **null** until the window has an attached decor
+     *    view, so calling it from the top of onCreate throws a NullPointerException and takes the
+     *    whole app down with it. This is only called after setContentView(), and it is still
+     *    null-checked, because a cosmetic preference must never be able to kill the app.
+     *  * The same appearance is already declared in the activity theme
+     *    (android:windowLightStatusBar=false), so if the controller is not available yet there is
+     *    nothing to fix: leave it alone.
+     */
     private void applyStatusBarIconTheme() {
-        if (Build.VERSION.SDK_INT >= 30) {
-            getWindow().getInsetsController().setSystemBarsAppearance(
-                    0, android.view.WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS);
-        } else {
-            View decor = getWindow().getDecorView();
-            decor.setSystemUiVisibility(decor.getSystemUiVisibility() & ~View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR);
+        try {
+            if (Build.VERSION.SDK_INT >= 30) {
+                WindowInsetsController controller = getWindow().getInsetsController();
+                if (controller == null) return;
+                controller.setSystemBarsAppearance(0, WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS);
+            } else {
+                View decor = getWindow().getDecorView();
+                if (decor == null) return;
+                decor.setSystemUiVisibility(decor.getSystemUiVisibility() & ~View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR);
+            }
+        } catch (Throwable ignored) {
+            // Cosmetic only: the theme's own windowLightStatusBar value keeps the icons readable.
         }
     }
 }

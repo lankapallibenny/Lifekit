@@ -98,6 +98,89 @@ describe('android shell configuration', () => {
   });
 });
 
+
+/**
+ * The launch path, pinned by these tests because version 1.0.0 shipped a crash here:
+ *
+ * `Window.getInsetsController()` returns null until the window has an attached decor view. The
+ * shell called it from the top of onCreate, so on Android 11+ the app threw a NullPointerException
+ * before it could draw anything — the icon appeared, the app never opened. The rules below are what
+ * stop that from coming back:
+ *
+ *  * never touch the insets controller without a null check,
+ *  * never touch it before setContentView(),
+ *  * keep the whole startup path inside a try/catch that can still say what went wrong,
+ *  * do not depend on a DayNight platform theme (its availability varies between Android versions),
+ *  * install the crash recorder before any activity runs.
+ */
+describe('the shell must not crash on launch', () => {
+  const mainActivity = readFileSync(
+    join(SHELL_MAIN, 'java', 'com', 'bennylankapalli', 'lifekit', 'MainActivity.java'),
+    'utf8'
+  );
+  const onCreate = mainActivity.slice(
+    mainActivity.indexOf('protected void onCreate(Bundle savedInstanceState)'),
+    mainActivity.indexOf('protected void onNewIntent(Intent intent)')
+  );
+
+  it('null-checks the window insets controller before using it', () => {
+    const appearanceCall = mainActivity.indexOf('getWindow().getInsetsController()');
+    expect(appearanceCall, 'the appearance call should still exist').toBeGreaterThan(-1);
+    const after = mainActivity.slice(appearanceCall, appearanceCall + 400);
+    expect(after).toMatch(/if \(controller == null\) return;/);
+    // The whole helper is also wrapped, because this is cosmetic and must never be fatal.
+    const helper = mainActivity.slice(mainActivity.indexOf('private void applyStatusBarIconTheme()'));
+    expect(helper).toMatch(/try \{/);
+    expect(helper).toMatch(/catch \(Throwable ignored\)/);
+  });
+
+  it('only touches the system bars after the content view exists', () => {
+    expect(onCreate).toMatch(/setContentView\(wrapContent\(webView\)\)/);
+    expect(onCreate.indexOf('setContentView(')).toBeLessThan(onCreate.indexOf('applyStatusBarIconTheme()'));
+  });
+
+  it('keeps startup inside a handler that can explain a failure', () => {
+    expect(onCreate).toMatch(/catch \(Throwable failure\)/);
+    expect(onCreate).toMatch(/showStartupProblem\(describe\(failure\)\)/);
+    expect(mainActivity).toContain('private void showStartupProblem(final String reason)');
+    // A page that never finishes loading must not leave a blank window either.
+    expect(mainActivity).toMatch(/LOAD_TIMEOUT_MS/);
+    expect(mainActivity).toMatch(/handler\.postDelayed\(loadTimeout/);
+  });
+
+  it('does not depend on a DayNight platform theme', () => {
+    const styles = readFileSync(join(SHELL_MAIN, 'res', 'values', 'styles.xml'), 'utf8');
+    const parent = /parent="([^"]+)"/.exec(styles)?.[1] ?? '';
+    expect(parent).not.toMatch(/DayNight/);
+    // windowLightStatusBar carries the same intent from the theme, so the runtime call is a
+    // refinement rather than the only thing keeping the icons readable.
+    expect(styles).toContain('android:windowLightStatusBar');
+  });
+
+  it('records a crash before any activity runs, and shows it once', () => {
+    expect(manifest).toContain('android:name=".LifekitApplication"');
+    const application = readFileSync(
+      join(SHELL_MAIN, 'java', 'com', 'bennylankapalli', 'lifekit', 'LifekitApplication.java'),
+      'utf8'
+    );
+    expect(application).toContain('CrashLog.install(this)');
+    expect(mainActivity).toContain('CrashLog.read()');
+    expect(mainActivity).toContain('CrashLog.clear()');
+  });
+
+  it('tells the user when Android itself has no WebView to draw in', () => {
+    expect(mainActivity).toContain('CrashLog.webViewMissing()');
+  });
+
+  it('carries the version the manifest and package.json agree on', () => {
+    // The 1.0.0 crash shipped with these three in step; this guards the fix being delivered as an
+    // update rather than as the same version code again.
+    const [major, minor, patch] = pkg.version.split('.').map((part) => parseInt(part, 10) || 0);
+    expect(manifest).toContain(`android:versionName="${pkg.version}"`);
+    expect(manifest).toContain(`android:versionCode="${major * 10000 + minor * 100 + patch}"`);
+  });
+});
+
 describe('android launcher icons', () => {
   const files = renderLauncherIcons();
   const descriptors = renderLauncherDescriptors();
