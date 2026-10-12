@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+# LIFEKIT collects no analytics and sets no tracking cookies.

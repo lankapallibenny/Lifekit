@@ -1,0 +1,3 @@
+# Runtime content and secrets never belong in version control.
+data/
+.env

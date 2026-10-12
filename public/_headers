@@ -1,0 +1,21 @@
+/*
+  LIFEKIT — static host headers (Netlify / Cloudflare Pages / GitHub Pages via proxy).
+  Mirrors the production CSP injected at build time by scripts/precache-plugin.ts.
+  GitHub Pages does not support custom headers; the meta CSP in index.html covers it.
+*/
+/*
+  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self'; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'; frame-ancestors 'none'
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Referrer-Policy: no-referrer
+  Permissions-Policy: geolocation=(), camera=(), microphone=(), payment=(), usb=(), midi=(), magnetometer=(), gyroscope=(), accelerometer=()
+  Cross-Origin-Opener-Policy: same-origin
+
+/sw.js
+  Cache-Control: no-cache
+
+/precache-manifest.json
+  Cache-Control: no-cache
+
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable

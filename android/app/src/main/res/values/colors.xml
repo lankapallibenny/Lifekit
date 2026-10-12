@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Mirrors the brand colours in src/styles.css (the navy-800 and navy-900 tokens). -->
+<resources>
+    <color name="navy">#0B1F3A</color>
+    <color name="navy_deep">#08182B</color>
+    <color name="mint">#2FE0A8</color>
+    <color name="splash_background">#0B1F3A</color>
+</resources>

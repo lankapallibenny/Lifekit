@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  LIFEKIT — Android shell around the bundled offline web app.
+
+  Notes for a reviewer:
+  * There is deliberately NO android.permission.INTERNET. The app serves its own content from
+    the APK's assets, so it cannot reach the network even by accident. The only network feature
+    of the web app (fetching a published content pack, off unless the user enables it) simply
+    reports that the feed is unreachable when running inside this shell.
+  * POST_NOTIFICATIONS is the only runtime permission: reminders are shown as real system
+    notifications, which is more reliable than a WebView's Notification API.
+  * VIBRATE only makes the reminder notification pattern possible.
+  * versionCode / versionName are rewritten from package.json by scripts/android/build-apk.mjs;
+    tests/android.test.ts asserts they match the version in package.json.
+  * LifekitApplication installs the crash recorder before any activity runs, so a launch failure is
+    written down and shown on the next start instead of the app disappearing silently.
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.bennylankapalli.lifekit"
+    android:versionCode="10001"
+    android:versionName="1.0.1">
+
+    <uses-sdk android:minSdkVersion="29" android:targetSdkVersion="34" />
+
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.VIBRATE" />
+
+    <application
+        android:name=".LifekitApplication"
+        android:label="@string/app_name"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:theme="@style/Theme.Lifekit"
+        android:allowBackup="true"
+        android:hardwareAccelerated="true"
+        android:supportsRtl="true"
+        android:usesCleartextTraffic="false"
+        android:enableOnBackInvokedCallback="false">
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:label="@string/app_name"
+            android:launchMode="singleTask"
+            android:windowSoftInputMode="adjustResize"
+            android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|smallestScreenSize|density"
+            android:theme="@style/Theme.Lifekit">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>

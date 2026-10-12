@@ -1,0 +1,45 @@
+{
+  "name": "lifekit",
+  "private": true,
+  "version": "1.0.1",
+  "type": "module",
+  "license": "MIT",
+  "description": "LIFEKIT \u2014 Everyday Tools. A Better Life. An offline-first, no-AI personal life toolkit PWA. Developed by Benny.",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview --host 0.0.0.0 --port 4173",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "icons": "node scripts/generate-icons.mjs",
+    "icons:check": "node scripts/generate-icons.mjs --check",
+    "android:icons": "node scripts/android/generate-launcher-icons.mjs",
+    "android:icons:check": "node scripts/android/generate-launcher-icons.mjs --check",
+    "android:check": "node scripts/android/build-apk.mjs --check",
+    "android:web": "vite build --config vite.android.config.ts",
+    "android:apk": "node scripts/android/build-apk.mjs",
+    "server": "node server/src/index.mjs",
+    "server:hash": "node server/src/index.mjs --hash",
+    "inventory": "node scripts/dependency-inventory.mjs",
+    "test:server": "vitest run tests/server.test.ts"
+  },
+  "dependencies": {
+    "react": "18.3.1",
+    "react-dom": "18.3.1"
+  },
+  "devDependencies": {
+    "@testing-library/dom": "^10.4.0",
+    "@testing-library/react": "^16.1.0",
+    "@testing-library/user-event": "^14.6.7",
+    "@types/node": "^26.6.5",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.4",
+    "fake-indexeddb": "^6.0.0",
+    "jsdom": "^25.0.1",
+    "typescript": "^5.7.2",
+    "vite": "^6.0.7",
+    "vitest": "^2.1.8"
+  }
+}
