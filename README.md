@@ -269,6 +269,12 @@ npm run android:apk          # -> dist-android/Lifekit-1.0.0.apk (+ .sha256)
 npm run android:check        # verify the shell's config without building
 ```
 
+**Install without building anything:** a build of version 1.0.0 is kept at
+[`android/releases/Lifekit-1.0.0.apk`](android/releases/README.md) — open
+`https://github.com/lankapallibenny/Lifekit/raw/main/android/releases/Lifekit-1.0.0.apk`
+on the phone and tap it. It installs on Android 10 or newer, needs no account, and asks for no
+internet permission.
+
 No Android SDK, Gradle or Android Studio is required: if the machine has neither a JDK nor Android
 build tools, the build fetches a self-contained set into `~/.cache/lifekit-android-tools` on first
 run and reuses it. Set `JAVA_HOME` and/or `LIFEKIT_ANDROID_TOOLS` to use your own instead.

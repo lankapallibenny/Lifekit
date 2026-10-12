@@ -74,6 +74,14 @@ path to your own ignore rules.
 
 ## 2. Install it
 
+**Prebuilt:** a build of the released version is checked in at
+[`android/releases/`](releases/README.md), so it can be downloaded and installed without building
+anything. Tap this on the phone:
+
+```
+https://github.com/lankapallibenny/Lifekit/raw/main/android/releases/Lifekit-1.0.0.apk
+```
+
 **On the phone, from a file:** copy the APK to the phone (USB, cloud drive, chat app), tap it, and
 allow "install unknown apps" for the app doing the installing. Android 8 and newer will ask once.
 
