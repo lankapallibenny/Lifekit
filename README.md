@@ -270,10 +270,15 @@ npm run android:check        # verify the shell's config without building
 ```
 
 **Install without building anything:** a build of version 1.0.0 is kept at
-[`android/releases/Lifekit-1.0.0.apk`](android/releases/README.md) — open
-`https://github.com/lankapallibenny/Lifekit/raw/main/android/releases/Lifekit-1.0.0.apk`
-on the phone and tap it. It installs on Android 10 or newer, needs no account, and asks for no
-internet permission.
+[`android/releases/`](android/releases/README.md) (269,882 bytes, SHA-256 starting `e0eb2dad…`).
+Open this on the phone and tap the file:
+
+```
+https://github.com/lankapallibenny/Lifekit/raw/main/android/releases/Lifekit-1.0.0.apk
+```
+
+It installs on Android 10 or newer, needs no account, and asks for no internet permission. The
+SHA-256 of the published file is in `android/releases/Lifekit-1.0.0.apk.sha256`.
 
 No Android SDK, Gradle or Android Studio is required: if the machine has neither a JDK nor Android
 build tools, the build fetches a self-contained set into `~/.cache/lifekit-android-tools` on first

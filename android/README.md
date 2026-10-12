@@ -74,12 +74,13 @@ path to your own ignore rules.
 
 ## 2. Install it
 
-**Prebuilt:** a build of the released version is checked in at
-[`android/releases/`](releases/README.md), so it can be downloaded and installed without building
-anything. Tap this on the phone:
+**Prebuilt:** a build of the released version is checked in at [`android/releases/`](releases/README.md),
+so it can be downloaded and installed without building anything. Open this on the phone and tap the
+file (the branch URL works until this work reaches `main`, then use the `main` URL):
 
 ```
 https://github.com/lankapallibenny/Lifekit/raw/main/android/releases/Lifekit-1.0.0.apk
+https://github.com/lankapallibenny/Lifekit/raw/arena/c664e297-lifekit/android/releases/Lifekit-1.0.0.apk
 ```
 
 **On the phone, from a file:** copy the APK to the phone (USB, cloud drive, chat app), tap it, and
